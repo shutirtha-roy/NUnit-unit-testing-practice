@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnitLibrary.ClassesWithNoDependencies;
 
 namespace Unit.NonDependency.Tests
 {
@@ -10,9 +11,16 @@ namespace Unit.NonDependency.Tests
         }
 
         [Test]
-        public void Test1()
+        [TestCase(15)]
+        [TestCase(30)]
+        [TestCase(45)]
+        public void GetOutput_WhenDivisibleBy3And5_GetFizzBuzz(int number)
         {
-            Assert.Pass();
+            string expected = "FizzBuzz";
+
+            var result = FizzBuzz.GetOutput(number);
+
+            Assert.AreEqual(expected, result);
         }
     }
 }
