@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace Unit.NonDependency.Tests
 {
-    public class Tests
+    public class FizzBuzzTests
     {
         [SetUp]
         public void Setup()
