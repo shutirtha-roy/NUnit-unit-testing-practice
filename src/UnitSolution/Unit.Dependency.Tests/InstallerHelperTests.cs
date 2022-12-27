@@ -6,7 +6,7 @@ using System.Net;
 using UnitLibrary.ClassesWithDependencies;
 using UnitLibrary.ClassesWithDependencies.File;
 
-namespace Unit.NonDependency.Tests
+namespace Unit.Dependency.Tests
 {
     public class InstallerHelperTests
     {

@@ -5,7 +5,7 @@ using UnitLibrary.ClassesWithDependencies;
 using UnitLibrary.ClassesWithDependencies.Reader;
 using UnitLibrary.ClassesWithDependencies.Repository;
 
-namespace Unit.NonDependency.Tests
+namespace Unit.Dependency.Tests
 {
     public class VideoServiceTests
     {
