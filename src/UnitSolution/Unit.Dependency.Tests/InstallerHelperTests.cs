@@ -1,7 +1,5 @@
 ﻿using Moq;
 using NUnit.Framework;
-using System;
-using System.IO;
 using System.Net;
 using UnitLibrary.ClassesWithDependencies;
 using UnitLibrary.ClassesWithDependencies.File;
@@ -23,7 +21,7 @@ namespace Unit.Dependency.Tests
         [Test]
         public void DownloadInstaller_DownloadInvalid_ReturnFalse()
         {
-            _fileDownloader.Setup(fileDownloader => 
+            _fileDownloader.Setup(fileDownloader =>
                 fileDownloader.DownloadFile(It.IsAny<string>(), It.IsAny<string>()
              )).Throws<WebException>();
 
