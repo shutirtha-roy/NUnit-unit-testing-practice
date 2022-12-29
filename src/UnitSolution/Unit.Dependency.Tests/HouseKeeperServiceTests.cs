@@ -1,5 +1,6 @@
 ﻿using Moq;
 using NUnit.Framework;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,7 @@ namespace Unit.Dependency.Tests
         private Mock<IEmailSender> _emailSender;
         private Mock<IXtraMessageBox> _messageBox;
         private HouseKeeperService _houseKeeperService;
+        private DateTime _dateTime;
 
         private List<Housekeeper> GetAllHouseKeepers()
         {
@@ -87,16 +89,20 @@ namespace Unit.Dependency.Tests
             _emailSender = new Mock<IEmailSender>();
             _messageBox = new Mock<IXtraMessageBox>();
             _houseKeeperService = new HouseKeeperService(_unitOfWork.Object, _statementGenerator.Object, _emailSender.Object, _messageBox.Object);
+            _dateTime = new DateTime(2022, 12, 3);
+        }
+
+        private void SetHouseKeepersInUnitOfWork(List<Housekeeper> houseKeepers)
+        {
+            _unitOfWork.Setup(unitOfWork => unitOfWork.Query<Housekeeper>()).Returns(houseKeepers.AsQueryable());
         }
 
         [Test]
         public void SendStatementEmail_WhenCalled_GenerateAllStatements()
         {
-            var houseKeepers = GetAllHouseKeepers();
-            _unitOfWork.Setup(unitOfWork => unitOfWork.Query<Housekeeper>()).Returns(houseKeepers.AsQueryable());
-            DateTime dateTime = new DateTime(2022, 12, 3);
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepers());
 
-            _houseKeeperService.SendStatementEmail(dateTime);
+            _houseKeeperService.SendStatementEmail(_dateTime);
 
             _statementGenerator.Verify(stateGenerator => stateGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>()));
         }
@@ -104,11 +110,9 @@ namespace Unit.Dependency.Tests
         [Test]
         public void SendStatementEmail_WhenEmailIsNull_NotGenerateAnyStatements()
         {
-            var houseKeepers = GetAllHouseKeepersWithWorkingAndNullEmail();
-            _unitOfWork.Setup(unitOfWork => unitOfWork.Query<Housekeeper>()).Returns(houseKeepers.AsQueryable());
-            DateTime dateTime = new DateTime(2022, 12, 3);
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepersWithWorkingAndNullEmail());
 
-            _houseKeeperService.SendStatementEmail(dateTime);
+            _houseKeeperService.SendStatementEmail(_dateTime);
 
             //Times.Never is used to Verify with it is not able to access statementGenerator
             _statementGenerator.Verify(stateGenerator => stateGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Never);
@@ -117,13 +121,61 @@ namespace Unit.Dependency.Tests
         [Test]
         public void SendStatementEmail_WhenEmailIsEmpty_NotGenerateAnyStatements()
         {
-            var houseKeepers = GetAllHouseKeepersWithEmptyEmail();
-            _unitOfWork.Setup(unitOfWork => unitOfWork.Query<Housekeeper>()).Returns(houseKeepers.AsQueryable());
-            DateTime dateTime = new DateTime(2022, 12, 3);
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepersWithEmptyEmail());
 
-            _houseKeeperService.SendStatementEmail(dateTime);
+            _houseKeeperService.SendStatementEmail(_dateTime);
 
             _statementGenerator.Verify(stateGenerator => stateGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Never);
+        }
+
+        [Test]
+        public void SendStatementEmail_WhenCalled_SendStatementToEmail()
+        {
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepers());
+
+            _statementGenerator.Setup(statementGenerator => statementGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns("statement");
+
+            _houseKeeperService.SendStatementEmail(_dateTime);
+
+            _emailSender.Verify(emailSender => emailSender.EmailFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()));
+        }
+
+        [Test]
+        public void SendStatementEmail_WhenStatementIsNull_NotSendStatementToEmail()
+        {
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepers());
+
+            _statementGenerator.Setup(statementGenerator => statementGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(() => null);
+
+            _houseKeeperService.SendStatementEmail(_dateTime);
+
+            _emailSender.Verify(emailSender => emailSender.EmailFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Test]
+        public void SendStatementEmail_WhenStatementIsEmpty_NotSendStatementToEmail()
+        {
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepers());
+
+            _statementGenerator.Setup(statementGenerator => statementGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns("");
+
+            _houseKeeperService.SendStatementEmail(_dateTime);
+
+            _emailSender.Verify(emailSender => emailSender.EmailFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Test]
+        public void SendStatementEmail_WhenEmailSenderIsValid_GoesToMessageBox()
+        {
+            SetHouseKeepersInUnitOfWork(GetAllHouseKeepers());
+
+            _statementGenerator.Setup(statementGenerator => statementGenerator.SaveStatement(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns("statement");
+
+            _emailSender.Setup(emailSender => emailSender.EmailFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Throws<Exception>();
+
+            _houseKeeperService.SendStatementEmail(_dateTime);
+
+            _messageBox.Verify(messageBox => messageBox.Show(It.IsAny<string>(), It.IsAny<string>(), MessageBoxButtons.OK));
         }
     }
 }
