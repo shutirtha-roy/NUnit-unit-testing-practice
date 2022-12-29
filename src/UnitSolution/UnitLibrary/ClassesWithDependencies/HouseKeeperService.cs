@@ -28,7 +28,7 @@ namespace UnitLibrary.ClassesWithDependencies
 
             foreach (var housekeeper in housekeepers)
             {
-                if (housekeeper.Email == null)
+                if (string.IsNullOrEmpty(housekeeper.Email))
                     continue;
 
                 var statementFilename = _statementGenerator.SaveStatement(housekeeper.Oid, housekeeper.FullName, statementDate);
